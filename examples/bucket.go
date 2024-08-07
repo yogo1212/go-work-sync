@@ -6,23 +6,21 @@ import (
 	work_sync "github.com/yogo1212/go-work-sync"
 )
 
-type byteCountArray [256]uint
-
 // A work_sync.Bucket ensures that each element of charCount is only accessed
 // once at a time and prevents a race condition when incrementing.
 // This is a showcase, not an efficient way to count bytes :-)
 
 var (
 	charCount [256]uint
-	c chan work_sync.BucketWorkReq
+	c chan work_sync.BucketWorkReq[byte, struct{}]
 )
 
 
 func countBytes(b []byte, done chan bool) {
 	for _, i := range b {
-		c <- work_sync.BucketWorkReq{
-			work_sync.BucketId(i),
-			func () {
+		c <- work_sync.BucketWorkReq[byte, struct{}]{
+			i,
+			func (_s *struct{}) {
 				charCount[i] = charCount[i] + 1
 			},
 		}
@@ -51,7 +49,7 @@ func addWorkAndClose() {
 }
 
 func main() {
-	c = make(chan work_sync.BucketWorkReq)
+	c = make(chan work_sync.BucketWorkReq[byte, struct{}])
 
 	go addWorkAndClose()
 
